@@ -46,12 +46,16 @@ class Solution {
     	
     	vector<int> getRotation() { return rotation; };
 
+    	// Get the total cost
         double getCost() { return cost; };
 
+        // Get the corner pieces (ids)
         vector<int> getCorners() { return corners; };
 
+        // Get the border pieces (ids)
         vector<int> getBorders() { return borders; };
 
+        // Get the inner pieces (ids)
         vector<int> getInners() { return inners; };
 
         // Get the (coord1, coord2, rotation) representation for the solution
@@ -64,14 +68,31 @@ class Solution {
 		void swap(int i, int j);
 
 		// Get the contribution to the cost given by piece at position $i
-		int getCost(int p);
+		int getCost(int i, int r);
+
+		// Get the contribution to the cost given by piece at position $i if it moves to position $j
+		int getCost(int i, int j, int r);
 
         // Compute the solution cost from scratch
         void computeCost();
 
-        // Get the color pattern of tile $t in position $e, considering the current rotation $rotation
-		int getColor(int t, int e);
+        // Get the color pattern of tile $t in position $e with rotation $r
+		int getColor(int t, int e, int r);
 
+		// Evaluate the incurring cost if piece in position $p is rotated in direction $r 
+		int evalRotate(int p, int r);
+
+		// Evaluate the incurring cost if pieces in position $i and $j are swaped
+		int evalSwap(int i, int j);
+
+		// Update the total cost. Typicaly called after a move
+		void updateCost(int delta);
+
+		// Get the number of pieces in the puzzle
+		int getN() { return n; };
+
+		// Print the solution in format (coord1, coord2, rotation) for each piece
+		void print();
 };
 
 #endif

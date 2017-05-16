@@ -49,22 +49,23 @@ vector< vector<int> > load(string dataFileName) {
 int main() {
 	vector< vector<int> > pieces = load(InputFile); // Load the vector of pieces
 	Solution * solution = new Solution(pieces);
-	vector<int> assignment = solution->getAssignment();
-	vector<int> rotation = solution->getRotation();
-	vector< vector <int> > m = solution->mapAssignment();
-
-	// for (int i = 0; i < m.size(); i++) {
-	// 	cout << m[i][0] << ", " << m[i][1] << ", " << m[i][2] << endl;
-	// }
-
-	solution->rotate(3, 2);
-	solution->rotate(7, 2);
-	solution->rotate(13, 3);
-	solution->swap(6, 9);
 	
-	//solution->computeCost();
+	int delta;
+	for (int i = 0; i < solution->getN(); i++) {
+		for (int j = 0; j < 4; j++) {
+			delta = solution->evalRotate(i, j);
+			if(delta < 0) {
+				solution->rotate(i, j);
+				solution->updateCost(delta);
+			}
+		}
+	}
 
-	cout << solution->getCost() << endl;
+	// solution->print();
+	
+	cout << "cost = " << solution->getCost() << endl;
+	
+	delete solution;
 
 	return 0;
 }

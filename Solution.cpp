@@ -37,21 +37,31 @@ void Solution::initialAssignment() {
 	assignment[d*(d-1)] = corners[2];
 	assignment[d*d - 1] = corners[3];
 
+	// Rotate to position the grey patterns in the border of the puzzle
+	rotation[assignment[0]] = 3;
+	rotation[assignment[d-1]] = 0;
+	rotation[assignment[d*(d-1)]] = 2;
+	rotation[assignment[d*d - 1]] = 1;
+
 	// Assign border tiles to positions in the border of the puzzle
 	for (int i = 1; i < d-1; i++) { // Top border
 		assignment[i] = borders[j];
+		rotation[assignment[i]] = 0;
 		j++;
 	}
 	for (int i = d*(d-1) + 1; i < (d*d)-1; i++) { // Bottom border
 		assignment[i] = borders[j];
+		rotation[assignment[i]] = 2;
 		j++;
 	}
 	for (int i = d; i < d*(d-1); i = i+d) { // Left border
 		assignment[i] = borders[j];
+		rotation[assignment[i]] = 3;
 		j++;
 	}
 	for (int i = d+(d-1); i < (d*d)-1; i = i+d) { // Rigth border
 		assignment[i] = borders[j];
+		rotation[assignment[i]] = 1;
 		j++;
 	}
 
@@ -103,59 +113,79 @@ vector< vector <int> > Solution::mapAssignment() {
 }
 
 void Solution::computeCost() {
-	const int d = sqrt(n);
 	int penalty = 0;
 	for (int i = 0; i < n; i++) {
-		penalty = penalty + getCost(i);
+		penalty = penalty + getCost(i, rotation[assignment[i]]);
 	}
-	cost = penalty/2;
+	cost = penalty/2; // Dividing by 2 because we are counting twice
 }
 
-int Solution::getColor(int t, int e) {
-	int z = e - rotation[t];
+int Solution::getColor(int t, int e, int r) {
+	int z = e - r;
 	return pieces[assignment[t]][(z%4 + 4)%4];
 }
 
+int Solution::evalRotate(int p, int r) {
+	int prevCost = getCost(p, rotation[assignment[p]]);
+	int postCost = getCost(p, r);
+	return postCost - prevCost; 
+}
+
 void Solution::rotate(int p, int r) {
-	int prevCost = getCost(p);
-	rotation[p] = r;
-	int postCost = getCost(p);
-	cost = cost + postCost - prevCost; 
+	rotation[assignment[p]] = r;
+}
+
+void Solution::updateCost(int delta) {
+	cost = cost + delta;
+}
+
+int Solution::evalSwap(int i, int j) {
+	int prevCostI = getCost(i, rotation[assignment[i]]);
+	int prevCostJ = getCost(j, rotation[assignment[j]]);
+	int postCostI = getCost(i, j, rotation[assignment[i]]);
+	int postCostJ = getCost(j, i, rotation[assignment[j]]);
+	return postCostI + postCostJ - prevCostI - prevCostJ; 
 }
 
 void Solution::swap(int i, int j) {
-	int prevCostI = getCost(i);
-	int prevCostJ = getCost(j);
 	int tmp = assignment[i];
 	assignment[i] = assignment[j];
 	assignment[j] = tmp;
-	int postCostI = getCost(i);
-	int postCostJ = getCost(j);
-	cost = cost + postCostI + postCostJ - prevCostI - prevCostJ;
 }
 
-int Solution::getCost(int i) {
+int Solution::getCost(int i, int r) {
+	return getCost(i, i, r);
+}
+
+int Solution::getCost(int i, int j, int r) {
 	const int d = sqrt(n);
 	int penalty = 0;
-	if((i-4) > 0) {
-		if(getColor(i-4, 2) != getColor(i, 0)) {
+	if((j-4) >= 0) {
+		if(getColor(j-4, 2, rotation[assignment[j-4]]) != getColor(i, 0, r)) {
 			penalty++;
 		}
 	}
-	if( ((i-1) > 0) && (i % d != 0) ) {
-		if(getColor(i-1, 1) != getColor(i, 3)) {
+	if( ((j-1) >= 0) && (i % d != 0) ) {
+		if(getColor(j-1, 1, rotation[assignment[j-1]]) != getColor(i, 3, r)) {
 			penalty++;
 		}	
 	}
-	if( ((i+1) < n) && ((i+1) % d != 0) ) {
-		if(getColor(i+1, 3) != getColor(i, 1)) {
+	if( ((j+1) < n) && ((j+1) % d != 0) ) {
+		if(getColor(j+1, 3, rotation[assignment[j+1]]) != getColor(i, 1, r)) {
 			penalty++;
 		}
 	}
-	if((i+4) < n) {
-		if(getColor(i+4, 0) != getColor(i, 2)) {
+	if((j+4) < n) {
+		if(getColor(j+4, 0, rotation[assignment[j+4]]) != getColor(i, 2, r)) {
 			penalty++;
 		}
 	}
 	return penalty;
+}
+
+void Solution::print() {
+	vector< vector <int> > m = mapAssignment();
+	for (int i = 0; i < m.size(); i++) {
+		cout << m[i][0] << " " << m[i][1] << " " << m[i][2] << endl;
+	}
 }
