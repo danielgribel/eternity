@@ -116,23 +116,25 @@ void Solution::computeCost() {
 	int penalty = 0;
 	for (int i = 0; i < n; i++) {
 		penalty = penalty + getCost(i, rotation[assignment[i]]);
+		// cout << getCost(i, rotation[assignment[i]]) << " ";
 	}
+	// cout << endl;
 	cost = penalty/2; // Dividing by 2 because we are counting twice
 }
 
-int Solution::getColor(int t, int e, int r) {
+int Solution::getColor(int i, int e, int r) {
 	int z = e - r;
-	return pieces[assignment[t]][(z%4 + 4)%4];
+	return pieces[assignment[i]][(z%4 + 4)%4];
 }
 
-int Solution::evalRotate(int p, int r) {
-	int prevCost = getCost(p, rotation[assignment[p]]);
-	int postCost = getCost(p, r);
+int Solution::evalRotate(int i, int r) {
+	int prevCost = getCost(i, rotation[assignment[i]]);
+	int postCost = getCost(i, r);
 	return postCost - prevCost; 
 }
 
-void Solution::rotate(int p, int r) {
-	rotation[assignment[p]] = r;
+void Solution::rotate(int i, int r) {
+	rotation[assignment[i]] = r;
 }
 
 void Solution::updateCost(int delta) {
@@ -144,7 +146,44 @@ int Solution::evalSwap(int i, int j) {
 	int prevCostJ = getCost(j, rotation[assignment[j]]);
 	int postCostI = getCost(i, j, rotation[assignment[i]]);
 	int postCostJ = getCost(j, i, rotation[assignment[j]]);
-	return postCostI + postCostJ - prevCostI - prevCostJ; 
+	int delta = postCostI + postCostJ - prevCostI - prevCostJ;
+
+	int d = sqrt(n);
+	int min = i;
+	int max = j;
+	
+	if(i > j) {
+		min = j;
+		max = i;
+	}
+
+	if(abs(i-j) == 4) {
+		int bottomMin = getColor(min, 2, rotation[assignment[min]]);
+		int bottomMax = getColor(max, 2, rotation[assignment[max]]);
+		int topMin = getColor(min, 0, rotation[assignment[min]]);
+		int topMax = getColor(max, 0, rotation[assignment[max]]);
+		if(bottomMin != topMax && bottomMax == topMin) {
+			delta++;
+		}
+		if(bottomMin == topMax && bottomMax != topMin) {
+			delta--;
+		}
+	}
+
+	if(abs(i-j) == 1 && (max % d != 0)) {
+		int rigthMin = getColor(min, 1, rotation[assignment[min]]);
+		int rigthMax = getColor(max, 1, rotation[assignment[max]]);
+		int leftMin = getColor(min, 3, rotation[assignment[min]]);
+		int leftMax = getColor(max, 3, rotation[assignment[max]]);
+		if(rigthMin != leftMax && rigthMax == leftMin) {
+			delta++;
+		}
+		if(rigthMin == leftMax && rigthMax != leftMin) {
+			delta--;
+		}
+	}
+
+	return delta;
 }
 
 void Solution::swap(int i, int j) {
@@ -161,23 +200,47 @@ int Solution::getCost(int i, int j, int r) {
 	const int d = sqrt(n);
 	int penalty = 0;
 	if((j-4) >= 0) {
-		if(getColor(j-4, 2, rotation[assignment[j-4]]) != getColor(i, 0, r)) {
-			penalty++;
+		if((j-4) == i) {
+			if(getColor(j, 2, rotation[assignment[j]]) != getColor(i, 0, r)) {
+				penalty++;
+			}	
+		} else {
+			if(getColor(j-4, 2, rotation[assignment[j-4]]) != getColor(i, 0, r)) {
+				penalty++;
+			}	
 		}
 	}
-	if( ((j-1) >= 0) && (i % d != 0) ) {
-		if(getColor(j-1, 1, rotation[assignment[j-1]]) != getColor(i, 3, r)) {
-			penalty++;
-		}	
+	if( ((j-1) >= 0) && (j % d != 0) ) {
+		if((j-1) == i) {
+			if(getColor(j, 1, rotation[assignment[j]]) != getColor(i, 3, r)) {
+				penalty++;
+			}	
+		} else {
+			if(getColor(j-1, 1, rotation[assignment[j-1]]) != getColor(i, 3, r)) {
+				penalty++;
+			}	
+		}
 	}
 	if( ((j+1) < n) && ((j+1) % d != 0) ) {
-		if(getColor(j+1, 3, rotation[assignment[j+1]]) != getColor(i, 1, r)) {
-			penalty++;
+		if((j+1) == i) {
+			if(getColor(j, 3, rotation[assignment[j]]) != getColor(i, 1, r)) {
+				penalty++;
+			}	
+		} else {
+			if(getColor(j+1, 3, rotation[assignment[j+1]]) != getColor(i, 1, r)) {
+				penalty++;
+			}	
 		}
 	}
 	if((j+4) < n) {
-		if(getColor(j+4, 0, rotation[assignment[j+4]]) != getColor(i, 2, r)) {
-			penalty++;
+		if((j+4) == i) {
+			if(getColor(j, 0, rotation[assignment[j]]) != getColor(i, 2, r)) {
+				penalty++;
+			}	
+		} else {
+			if(getColor(j+4, 0, rotation[assignment[j+4]]) != getColor(i, 2, r)) {
+				penalty++;
+			}
 		}
 	}
 	return penalty;
@@ -188,4 +251,40 @@ void Solution::print() {
 	for (int i = 0; i < m.size(); i++) {
 		cout << m[i][0] << " " << m[i][1] << " " << m[i][2] << endl;
 	}
+}
+
+void Solution::printAssignment() {
+	for (int i = 0; i < n; i++) {
+		cout << assignment[i] << " ";
+	}
+	cout << endl;
+}
+
+// Given a position at $i, return the pattern in its top
+int Solution::top(int i) {
+	if( (i-4) < 0 ) {
+		return -1;
+	}
+	return getColor(i-4, 2, rotation[assignment[i-4]]);
+}
+
+int Solution::bottom(int i) {
+	if( (i+4) > n-1 ) {
+		return -1;
+	}
+	return getColor(i+4, 0, rotation[assignment[i+4]]);
+}
+
+int Solution::left(int i) {
+	if( (i-1) < 0 ) {
+		return -1;
+	}
+	return getColor(i-1, 3, rotation[assignment[i-1]]);
+}
+
+int Solution::rigth(int i) {
+	if( (i+1) > n-1 ) {
+		return -1;
+	}
+	return getColor(i+1, 1, rotation[assignment[i+1]]);
 }
