@@ -5,8 +5,13 @@
 #include <algorithm>
 #include <vector>
 #include <math.h>
+#include <limits>
+#include "MoveWrapper.h"
+#include "LocalSolutionWrapper.h"
 
 using namespace std;
+
+const int MAX_INT = numeric_limits<int>::max();
 
 class Solution {
 
@@ -27,6 +32,8 @@ class Solution {
 	    vector<int> inners;
 
 	    int n;
+
+	    vector<int> pieceType;
 
 	    void categorizePieces();
 
@@ -58,6 +65,10 @@ class Solution {
         // Get the inner pieces (ids)
         vector<int> getInners() { return inners; };
 
+        void fixBorders();
+
+        int getPieceType(int pos);
+
         // Get the (coord1, coord2, rotation) representation for the solution
         vector< vector <int> > mapAssignment();
 
@@ -67,11 +78,14 @@ class Solution {
         // Apply swap move and update cost
 		void swap(int i, int j);
 
-		// Get the contribution to the cost given by piece at position $i
+		// Get the contribution to the cost given by piece at position $i in its current rotation
+		int getCost(int i);
+
+		// Get the contribution to the cost given by piece at position $i considering a rotation $r
 		int getCost(int i, int r);
 
 		// Get the contribution to the cost given by piece at position $i if it moves to position $j
-		int getCost(int i, int j, int r);
+		int getCost(int i, int j, int rotI, int rotJ);
 
         // Compute the solution cost from scratch
         void computeCost();
@@ -83,7 +97,9 @@ class Solution {
 		int evalRotate(int i, int r);
 
 		// Evaluate the incurring cost if pieces in position $i and $j are swaped
-		int evalSwap(int i, int j);
+		int evalSwap(int p1, int p2, int r1, int r2);
+
+		int evalSwap(int p1, int p2);
 
 		// Update the total cost. Typicaly called after a move
 		void updateCost(int delta);
@@ -91,18 +107,38 @@ class Solution {
 		// Get the number of pieces in the puzzle
 		int getN() { return n; };
 
+		int trySwap(int i, int j);
+
+		MoveWrapper swapWrapper(int i, int j);
+
+		void rotateAndSwap(MoveWrapper mw);
+
+		int top(int i, int r);
+
+		int rigth(int i, int r);
+
+		int bottom(int i, int r);
+
+		int left(int i, int r);
+
 		int top(int i);
+
+		int rigth(int i);
 
 		int bottom(int i);
 
 		int left(int i);
 
-		int rigth(int i);
-
 		// Print the solution in format (coord1, coord2, rotation) for each piece
 		void print();
 
 		void printAssignment();
+
+		void printRotation();
+
+		LocalSolutionWrapper getBestRotation(vector<int> permut, vector<int> region, int r);
+
+		void assign(int piece, int pos);
 };
 
 #endif
