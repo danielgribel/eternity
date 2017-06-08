@@ -6,6 +6,7 @@ Solution::Solution(vector< vector<int> > pieces, vector<int> assignment, vector<
 	this->pieces = pieces;
 	this->n = pieces.size();
 	this->assignment = assignment;
+	this->position = vector<int> (n);
 	this->rotation = rotation;
 	this->pieceType = vector<int> (n);
 	this->cost = cost;
@@ -13,10 +14,27 @@ Solution::Solution(vector< vector<int> > pieces, vector<int> assignment, vector<
 	computeCost();
 }
 
+Solution::Solution(vector< vector<int> > pieces,
+					vector<int> assignment,
+					vector<int> rotation,
+					vector<int> position,
+					vector<int> pieceType, 
+					double cost) {
+	
+	this->pieces = pieces;
+	this->assignment = assignment;
+	this->rotation = rotation;
+	this->position = position;
+	this->pieceType = pieceType;
+	this->cost = cost;
+	this->n = pieces.size();
+}
+
 Solution::Solution(vector< vector<int> > pieces) {
 	this->pieces = pieces;
 	this->n = pieces.size();
 	this->assignment = vector<int> (n);
+	this->position = vector<int> (n);
 	this->rotation = vector<int> (n);
 	this->pieceType = vector<int> (n);
 	cost = 0.0;
@@ -32,12 +50,14 @@ Solution::~Solution() {
 void Solution::initialAssignment() {
 	int d = sqrt(n);
 	int j = 0;
+	Util u;
 
 	// Assign corner tiles to positions in the corner of the puzzle
-	assignment[0] = corners[0];
-	assignment[d-1] = corners[1];
-	assignment[d*(d-1)] = corners[2];
-	assignment[d*d - 1] = corners[3];
+	vector<int> shCorners = u.shuffle(corners.size());
+	assignment[0] = corners[shCorners[0]];
+	assignment[d-1] = corners[shCorners[1]];
+	assignment[d*(d-1)] = corners[shCorners[2]];
+	assignment[d*d - 1] = corners[shCorners[3]];
 
 	// Rotate to position the grey patterns in the border of the puzzle
 	rotation[assignment[0]] = 3;
@@ -46,23 +66,24 @@ void Solution::initialAssignment() {
 	rotation[assignment[d*d - 1]] = 1;
 
 	// Assign border tiles to positions in the border of the puzzle
+	vector<int> shBorders = u.shuffle(borders.size());
 	for (int i = 1; i < d-1; i++) { // Top border
-		assignment[i] = borders[j];
+		assignment[i] = borders[shBorders[j]];
 		rotation[assignment[i]] = 0;
 		j++;
 	}
 	for (int i = d*(d-1) + 1; i < (d*d)-1; i++) { // Bottom border
-		assignment[i] = borders[j];
+		assignment[i] = borders[shBorders[j]];
 		rotation[assignment[i]] = 2;
 		j++;
 	}
 	for (int i = d; i < d*(d-1); i = i+d) { // Left border
-		assignment[i] = borders[j];
+		assignment[i] = borders[shBorders[j]];
 		rotation[assignment[i]] = 3;
 		j++;
 	}
 	for (int i = d+(d-1); i < (d*d)-1; i = i+d) { // Rigth border
-		assignment[i] = borders[j];
+		assignment[i] = borders[shBorders[j]];
 		rotation[assignment[i]] = 1;
 		j++;
 	}
@@ -70,12 +91,18 @@ void Solution::initialAssignment() {
 	// Assign inner tiles to positions in the inner area of the puzzle
 	int s;
 	int q = 0;
+	vector<int> shInners = u.shuffle(inners.size());
 	for (int y = 1; y < d-1; y++) {
 		s = y*d + 1;
 		for (int i = 0; i < d-2; i++) {
-			assignment[s + i] = inners[q];
+			assignment[s + i] = inners[shInners[q]];
+			rotation[assignment[s + i]] = rand() % 4;
 			q++;
 		}
+	}
+
+	for(int i = 0; i < n; i++) {
+		position[assignment[i]] = i;
 	}
 }
 
@@ -106,18 +133,16 @@ void Solution::fixBorders() {
 	for(int i = 1; i < d; i++) {
 		rotate(i, 0);
 	}
-
-	for(int i = 0; i <= d+d; i=i+d) {
+	for(int i = 0; i < d*(d-1); i=i+d) {
 		rotate(i, 3);	
 	}
-
-	for(int i = d+d-1; i <= n-1; i=i+d) {
+	for(int i = d+d-1; i < n; i=i+d) {
 		rotate(i, 1);
 	}
-
 	for(int i = d*(d-1); i < n-1; i++) {
 		rotate(i, 2);
 	}
+	computeCost();
 }
 
 int Solution::getPieceType(int pos) {
@@ -125,17 +150,29 @@ int Solution::getPieceType(int pos) {
 }
         
 vector< vector <int> > Solution::mapAssignment() {
-	int n = assignment.size();
 	int d = sqrt(n);
 	vector< vector <int> > m (n, vector<int>(3));
 	vector<int> prtAssignment (assignment.size());
 	for (int i = 0; i < assignment.size(); i++) {
 		prtAssignment[assignment[i]] = i;
 	}
+	int r;
 	for (int i = 0; i < n; i++) {
+		r = rotation[i];
+		if(pieceType[i] == 2) {
+			if(rotation[i] == 0)
+				r = 3;
+			else if(rotation[i] == 1)
+				r = 0;
+			else if(rotation[i] == 2)
+				r = 1;
+			else if(rotation[i] == 3)
+				r = 2;	
+		}
 		m[i][0] = prtAssignment[i]/d;
 		m[i][1] = prtAssignment[i]%d;
-		m[i][2] = rotation[i];
+		m[i][2] = r;
+		// m[i][2] = rotation[i];
 	}
 	return m;
 }
@@ -225,7 +262,9 @@ int Solution::evalSwap(int p1, int p2, int r1, int r2) {
 void Solution::swap(int i, int j) {
 	int tmp = assignment[i];
 	assignment[i] = assignment[j];
+	position[assignment[j]] = i;
 	assignment[j] = tmp;
+	position[tmp] = j;
 }
 
 int Solution::getCost(int i) {
@@ -358,9 +397,9 @@ void Solution::printAssignment() {
 
 void Solution::printRotation() {
 	for (int i = 0; i < n; i++) {
-		cout << rotation[i] << " ";
+		cout << i << ": " << rotation[i] << endl;
 	}
-	cout << endl;
+	// cout << endl;
 }
 
 int Solution::top(int i, int r) {
@@ -419,29 +458,28 @@ LocalSolutionWrapper Solution::getBestRotation(vector<int> permut, vector<int> r
 					if(bottom(permut[1], r1) != top(permut[3], r3)) {
 						err++;
 					}
-
-					if(/*(region[0]-d >= 0) && */(top(permut[0], r0) != bottom(region[0]-d))) {
+					if((region[0]-d >= 0) && (top(permut[0], r0) != bottom(region[0]-d))) {
 						err++;
 					}
-					if(/*(region[0]-1 >= 0) && */(left(permut[0], r0) != rigth(region[0]-1))) {
+					if((region[0]-1 >= 0) && (region[0] % d != 0) && (left(permut[0], r0) != rigth(region[0]-1))) {
 						err++;
 					}
-					if(/*(region[1]-d >= 0) && */(top(permut[1], r1) != bottom(region[1]-d))) {
+					if((region[1]-d >= 0) && (top(permut[1], r1) != bottom(region[1]-d))) {
 						err++;
 					}
-					if(/*(region[1]+1 < n) && */(rigth(permut[1], r1) != left(region[1]+1))) {
+					if((region[1]+1 < n) && ((region[1]+1) % d != 0) && (rigth(permut[1], r1) != left(region[1]+1))) {
 						err++;
 					}
-					if(/*(region[2]+d < n) && */(bottom(permut[2], r2) != top(region[2]+d))) {
+					if((region[2]+d < n) && (bottom(permut[2], r2) != top(region[2]+d))) {
 						err++;
 					}
-					if(/*(region[2]-1 >= 0) && */(left(permut[2], r2) != rigth(region[2]-1))) {
+					if((region[2]-1 >= 0) && (region[2] % d != 0) && (left(permut[2], r2) != rigth(region[2]-1))) {
 						err++;
 					}
-					if(/*(region[3]+d < n) && */(bottom(permut[3], r3) != top(region[3]+d))) {
+					if((region[3]+d < n) && (bottom(permut[3], r3) != top(region[3]+d))) {
 						err++;
 					}
-					if(/*(region[3]+1 < n) && */(rigth(permut[3], r3) != left(region[3]+1))) {
+					if((region[3]+1 < n) && ((region[3]+1) % d != 0) && (rigth(permut[3], r3) != left(region[3]+1))) {
 						err++;
 					}
 
@@ -467,6 +505,124 @@ LocalSolutionWrapper Solution::getBestRotation(vector<int> permut, vector<int> r
 	return lsw;
 }
 
+LocalSolutionWrapper Solution::costAssign(int b, int p, vector< vector<int> > block) {
+	int err;
+	int d = sqrt(n);
+	int q = 0;
+	int min = MAX_INT;
+	vector<int> bestRot(4);
+	LocalSolutionWrapper lsw;
+	for(int r0 = 0; r0 < 4; r0++) {
+		for(int r1 = 0; r1 < 4; r1++) {
+			for(int r2 = 0; r2 < 4; r2++) {
+				for(int r3 = 0; r3 < 4; r3++) {
+					err = 0;
+					// The cost of inner edges of block $b
+					if(rigth(block[b][0], r0) != left(block[b][1], r1)) {
+						err++;
+					}
+					if(rigth(block[b][2], r2) != left(block[b][3], r3)) {
+						err++;
+					}
+					if(bottom(block[b][0], r0) != top(block[b][2], r2)) {
+						err++;
+					}
+					if(bottom(block[b][1], r1) != top(block[b][3], r3)) {
+						err++;
+					}
+					// The cost of outer edges if block $b is assigned to position $p
+					if((block[p][0]-d >= 0) && (top(block[b][0], r0) != bottom(block[p][0]-d))) {
+						err++;
+					}
+					if((block[p][0]-1 >= 0) && (left(block[b][0], r0) != rigth(block[p][0]-1))) {
+						err++;
+					}
+					if((block[p][1]-d >= 0) && (top(block[b][1], r1) != bottom(block[p][1]-d))) {
+						err++;
+					}
+					if((block[p][1]+1 < n) && (rigth(block[b][1], r1) != left(block[p][1]+1))) {
+						err++;
+					}
+					if((block[p][2]+d < n) && (bottom(block[b][2], r2) != top(block[p][2]+d))) {
+						err++;
+					}
+					if((block[p][2]-1 >= 0) && (left(block[b][2], r2) != rigth(block[p][2]-1))) {
+						err++;
+					}
+					if((block[p][3]+d < n) && (bottom(block[b][3], r3) != top(block[p][3]+d))) {
+						err++;
+					}
+					if((block[p][3]+1 < n) && (rigth(block[b][3], r3) != left(block[p][3]+1))) {
+						err++;
+					}
+
+					if(err < min) {
+						min = err;
+						bestRot[0] = r0;
+						bestRot[1] = r1;
+						bestRot[2] = r2;
+						bestRot[3] = r3;
+						lsw.error = err;
+						lsw.rotation = bestRot;
+						lsw.permutation = block[b];
+						lsw.region = b;
+						if(err == 0) {
+							return lsw;
+						}
+					}
+				}
+			}
+		}
+	}
+
+	return lsw;
+}
+
+void Solution::computeAssignment(vector<int> listOfBlocks, vector< vector<int> > blocks) {
+	const int s = listOfBlocks.size();
+	vector< vector<LocalSolutionWrapper> > G (s, vector<LocalSolutionWrapper>(s));
+	vector< vector<double> > G_ (s, vector<double>(s));
+
+	for(int i = 0; i < s; i++) {
+		for(int j = 0; j < s; j++) {
+			LocalSolutionWrapper X = costAssign(listOfBlocks[i], listOfBlocks[j], blocks);
+			G[i][j] = X;
+			G_[i][j] = X.error;
+		}
+	}
+
+	VI Lmate;
+	VI Rmate;
+	Util x;
+	double c = x.MinCostMatching(G_, Lmate, Rmate);
+	vector< vector<int> > rot (s, vector<int>(4));
+
+	// TO-DO: Rotate blocks
+	for(int i = 0; i < s; i++) {
+		rot[i] = G[i][Lmate[i]].rotation;
+		for(int j = 0; j < 4; j++) {
+			rotate(blocks[listOfBlocks[i]][j], rot[i][j]);
+		}
+	}
+
+	vector<int> tmpAssignment = assignment;
+
+	for(int i = 0; i < Lmate.size(); i++) {
+		if(i != Lmate[i]) {
+			placeBlock(listOfBlocks[i], listOfBlocks[Lmate[i]], tmpAssignment, blocks);
+		}
+	}
+	
+	computeCost();
+}
+
+void Solution::placeBlock(int b, int p, vector<int> tmpAssignment, vector< vector<int> > blocks) {
+	assign(tmpAssignment[blocks[b][0]], blocks[p][0]);
+	assign(tmpAssignment[blocks[b][1]], blocks[p][1]);
+	assign(tmpAssignment[blocks[b][2]], blocks[p][2]);
+	assign(tmpAssignment[blocks[b][3]], blocks[p][3]);
+}
+
 // int regionCost(vector<int> region) {
 // 	int err = 0;
 // 	for(int i = 0; i < region.size(); i++) {
@@ -476,4 +632,9 @@ LocalSolutionWrapper Solution::getBestRotation(vector<int> permut, vector<int> r
 
 void Solution::assign(int piece, int pos) {
 	assignment[pos] = piece;
+	position[piece] = pos;
+}
+
+int Solution::getPosition(int piece) {
+	return position[piece];
 }

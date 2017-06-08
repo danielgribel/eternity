@@ -8,6 +8,7 @@
 #include <limits>
 #include "MoveWrapper.h"
 #include "LocalSolutionWrapper.h"
+#include "Util.h"
 
 using namespace std;
 
@@ -20,7 +21,9 @@ class Solution {
 		vector< vector<int> > pieces;
     	
     	vector<int> assignment;
-    	
+
+    	vector<int> position;
+
     	vector<int> rotation;
         
         double cost;
@@ -42,6 +45,13 @@ class Solution {
     public:
 
     	Solution(vector< vector<int> > pieces, vector<int> assignment, vector<int> rotation, double cost);
+
+    	Solution(vector< vector<int> > pieces,
+					vector<int> assignment,
+					vector<int> rotation,
+					vector<int> position,
+					vector<int> pieceType, 
+					double cost);
         
         Solution(vector< vector<int> > pieces);
         
@@ -68,6 +78,8 @@ class Solution {
         void fixBorders();
 
         int getPieceType(int pos);
+
+        vector<int> getPieceType() { return pieceType; };
 
         // Get the (coord1, coord2, rotation) representation for the solution
         vector< vector <int> > mapAssignment();
@@ -139,6 +151,16 @@ class Solution {
 		LocalSolutionWrapper getBestRotation(vector<int> permut, vector<int> region, int r);
 
 		void assign(int piece, int pos);
+
+		LocalSolutionWrapper costAssign(int b, int p, vector< vector<int> > block);
+
+		void computeAssignment(vector<int> listOfBlocks, vector< vector<int> > blocks);
+
+		void placeBlock(int b, int p, vector<int> tmpAssignment, vector< vector<int> > blocks);
+
+		int getPosition(int piece);
+
+		vector<int> getPosition() { return position; };
 };
 
 #endif
